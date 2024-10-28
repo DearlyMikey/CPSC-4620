@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/Ch07_SaleCo_MySQL.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/ClassExercise02/ClassExercise02-SetupDB.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/ClassExercise02/ClassExercise02.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/ClassExercise03/ClassExercise03-SetupDB.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/ClassExercise03/ClassExercise03.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet02/PracticeSet02-Problem01.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet02/PracticeSet02-Problem02.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet02/PracticeSet02-Problem03.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet02/PracticeSet02-Problem04.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet02/PracticeSet02-Problem05.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet02/PracticeSet02-SetupDB.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet03/PracticeSet03-Problem01.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet03/PracticeSet03-Problem02.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet03/PracticeSet03-Problem03.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet03/PracticeSet03-Problem04.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet03/PracticeSet03-Problem05.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet03/PracticeSet03-Problem06.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet03/PracticeSet03-SetupDB.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem01.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem02.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem03.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem04.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem05.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem06.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem07.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem08.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-Problem09.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/PracticeSet04/PracticeSet04-SetupDB.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/world.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/worlddbqs.sql" dialect="MySQL" />
+    <file url="PROJECT" dialect="MySQL" />
+  </component>
+</project>
