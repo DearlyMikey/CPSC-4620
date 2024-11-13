@@ -20,4 +20,29 @@
 -- +------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 /* YOUR SOLUTION HERE */
+DELIMITER $$
+CREATE PROCEDURE OwnerEmailList(
+    INOUT ownerEmailList TEXT
+)
+BEGIN
+    DECLARE done BOOL DEFAULT false;
+    DECLARE email_address VARCHAR(100) DEFAULT '';
+    DECLARE cur CURSOR FOR SELECT OwnerEmail FROM OWNER ORDER BY OwnerID;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = true;
 
+    OPEN cur;
+
+    SET ownerEmailList = '';
+
+    connect_emails: LOOP
+        FETCH cur INTO email_address;
+            IF done = true THEN
+                LEAVE connect_emails;
+            END IF;
+
+        SET ownerEmailList = CONCAT(email_address,';',ownerEmailList);
+    END LOOP;
+
+    CLOSE cur;
+END$$
+DELIMITER ;

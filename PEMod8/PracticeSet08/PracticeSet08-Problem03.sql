@@ -33,4 +33,6 @@
 -- +---------------------+
 
 /* YOUR SOLUTION HERE */
-
+SET @table_name:='OWNER';
+SET @OwnerEmailCollector:=CONCAT('SELECT OwnerEmail FROM ',@table_name);
+PREPARE Statement FROM @OwnerEmailCollector;

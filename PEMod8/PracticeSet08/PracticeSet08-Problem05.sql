@@ -21,4 +21,11 @@
 -- +----------------------+
 
 /* YOUR SOLUTION HERE */
-
+DELIMITER $$
+CREATE TRIGGER email_update
+    BEFORE UPDATE ON OWNER
+    FOR EACH ROW
+    BEGIN
+        SET new.OwnerEmail = LOWER(new.OwnerEmail);
+END $$
+DELIMITER ;

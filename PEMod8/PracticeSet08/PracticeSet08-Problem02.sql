@@ -33,11 +33,33 @@
 -- +-----------+------------------------+
 
 /* YOUR SOLUTION HERE */
+DELIMITER $$
 CREATE FUNCTION GuestStatus(
     GuestID int
 )
 RETURNS VARCHAR(10) DETERMINISTIC
 BEGIN
-    SELECT COUNT(GuestID) FROM GUEST GROUP BY GuestID;
+    DECLARE GuestLevel VARCHAR(10);
+    DECLARE StayCount INT;
+    SELECT COUNT(s.GuestID) FROM STAY AS s
+        RIGHT JOIN GUEST as g ON s.GuestID = g.GuestID
+        WHERE g.GuestID = GuestID INTO StayCount;
+    IF StayCount > 2 THEN
+        SET GuestLevel = 'GOLD';
+    ELSEIF (StayCount = 1 OR StayCount = 2) THEN
+        SET GuestLevel = 'BRONZE';
+    ELSEIF StayCount = 0 THEN
+        SET GuestLevel = 'NEW';
+    END IF;
+    RETURN(GuestLevel);
+END $$
+DELIMITER ;
 
-END;
+# DROP FUNCTION GuestStatus
+#
+# SELECT GuestID, GuestStatus(GuestID) FROM GUEST;
+# SELECT GuestID, COUNT(GuestID) FROM stay GROUP BY GuestID
+#
+# SELECT g.GuestID, COUNT(s.GuestID) FROM STAY AS s
+#         RIGHT JOIN GUEST as g ON s.GuestID = g.GuestID
+#         GROUP BY g.GuestID

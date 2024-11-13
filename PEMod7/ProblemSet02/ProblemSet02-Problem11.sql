@@ -1,0 +1,16 @@
+-- ## Problem 11
+-- 
+-- Write a query to generate the total number of invoices, the invoice total for all of the 
+-- invoices, the smallest of the customer purchase amounts, the largest of the customer purchase
+-- amounts, and the average of all the customer purchase amounts. 
+-- 
+-- Your output must match the results show below.
+-- 
+-- +----------------+-------------+----------------------------+----------------------------+----------------------------+
+-- | Total Invoices | Total Sales | Minimum Customer Purchases | Largest Customer Purchases | Average Customer Purchases |
+-- +----------------+-------------+----------------------------+----------------------------+----------------------------+
+-- |       8        |   1126.03   |           34.97            |           444.00           |           225.21           |
+-- +----------------+-------------+----------------------------+----------------------------+----------------------------+
+-- 
+-- 
+/* YOUR SOLUTION HERE */

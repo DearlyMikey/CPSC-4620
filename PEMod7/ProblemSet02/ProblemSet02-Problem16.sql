@@ -1,0 +1,15 @@
+-- ## Problem 16
+-- 
+-- Write a query to find the customer balance summary for all customers who have not made 
+-- purchases during the current invoicing period. 
+-- 
+-- The results are shown here.
+-- 
+-- +---------------+-----------------+-----------------+-----------------+
+-- | Total Balance | Minimum Balance | Maximum Balance | Average Balance |
+-- +---------------+-----------------+-----------------+-----------------+
+-- |    1526.87    |      0.00       |     768.93      |     305.37      |
+-- +---------------+-----------------+-----------------+-----------------+
+-- 
+-- 
+/* YOUR SOLUTION HERE */

@@ -1,0 +1,12 @@
+-- ## Problem 13
+-- 
+-- Provide a summary of customer balance characteristics for customers who made purchases. 
+-- Include the minimum balance, maximum balance, and average balance, as shown below.
+-- 
+-- +-----------------+-----------------+-----------------+
+-- | Minimum Balance | Maximum Balance | Average Balance |
+-- +-----------------+-----------------+-----------------+
+-- |      0.00       |     345.86      |      70.30      |
+-- +-----------------+-----------------+-----------------+
+-- 
+/* YOUR SOLUTION HERE */
