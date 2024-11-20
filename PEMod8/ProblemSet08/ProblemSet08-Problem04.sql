@@ -5,4 +5,5 @@
 -- 
 
 /* YOUR SOLUTION HERE */
+COMMIT;
 
