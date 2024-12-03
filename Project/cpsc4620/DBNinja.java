@@ -1,0 +1,680 @@
+package cpsc4620;
+
+import java.io.IOException;
+import java.sql.*;
+import java.util.*;
+
+/*
+ * This file is where you will implement the methods needed to support this application.
+ * You will write the code to retrieve and save information to the database and use that
+ * information to build the various objects required by the applicaiton.
+ * 
+ * The class has several hard coded static variables used for the connection, you will need to
+ * change those to your connection information
+ * 
+ * This class also has static string variables for pickup, delivery and dine-in. 
+ * DO NOT change these constant values.
+ * 
+ * You can add any helper methods you need, but you must implement all the methods
+ * in this class and use them to complete the project.  The autograder will rely on
+ * these methods being implemented, so do not delete them or alter their method
+ * signatures.
+ * 
+ * Make sure you properly open and close your DB connections in any method that
+ * requires access to the DB.
+ * Use the connect_to_db below to open your connection in DBConnector.
+ * What is opened must be closed!
+ */
+
+/*
+ * A utility class to help add and retrieve information from the database
+ */
+
+public final class DBNinja {
+	private static Connection conn;
+
+	// DO NOT change these variables!
+	public final static String pickup = "pickup";
+	public final static String delivery = "delivery";
+	public final static String dine_in = "dinein";
+
+	public final static String size_s = "Small";
+	public final static String size_m = "Medium";
+	public final static String size_l = "Large";
+	public final static String size_xl = "XLarge";
+
+	public final static String crust_thin = "Thin";
+	public final static String crust_orig = "Original";
+	public final static String crust_pan = "Pan";
+	public final static String crust_gf = "Gluten-Free";
+
+	public enum order_state {
+		PREPARED,
+		DELIVERED,
+		PICKEDUP
+	}
+
+
+	private static boolean connect_to_db() throws SQLException, IOException 
+	{
+
+		try {
+			conn = DBConnector.make_connection();
+			return true;
+		} catch (SQLException e) {
+			return false;
+		} catch (IOException e) {
+			return false;
+		}
+
+	}
+
+	public static void addOrder(Order o) throws SQLException, IOException 
+	{
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			connect_to_db();
+			conn.setAutoCommit(false);
+			String sql =
+					"INSERT INTO `ordertable` " +
+							"(customer_CustID, ordertable_OrderType, ordertable_OrderDateTime, " +
+							"ordertable_CustPrice, ordertable_BusPrice) " +
+							"VALUES (?, ?, ?, ?, ?)";
+			ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+			ps.setObject(1, o.getCustID() == -1 ? null : o.getCustID(), java.sql.Types.INTEGER);
+			ps.setString(2, o.getOrderType());
+			ps.setString(3, o.getDate());
+			ps.setDouble(4, o.getCustPrice());
+			ps.setDouble(5, o.getBusPrice());
+			ps.executeUpdate();
+
+			rs = ps.getGeneratedKeys();
+			if(!rs.next()) {
+				throw new SQLException("Failed to retrieve generated Order ID.");
+			}
+			int orderID = rs.getInt(1);
+			o.setOrderID(orderID);
+
+			if (o instanceof DeliveryOrder) {
+				DeliveryOrder delivery = (DeliveryOrder) o;
+				sql = "INSERT INTO `delivery` " +
+						"(ordertable_OrderID, delivery_HouseNum, delivery_Street, delivery_City, delivery_State, delivery_Zip, delivery_IsDelivered) " +
+						"VALUES (?, ?, ?, ?, ?, ?, ?)";
+				try (PreparedStatement deliveryPs = conn.prepareStatement(sql)) {
+					deliveryPs.setInt(1, orderID);
+					String[] addressParts = delivery.getAddress().split(",");
+					deliveryPs.setInt(2, Integer.parseInt(addressParts[0].trim())); // HouseNum
+					deliveryPs.setString(3, addressParts[1].trim()); // Street
+					deliveryPs.setString(4, addressParts[2].trim()); // City
+					deliveryPs.setString(5, addressParts[3].trim()); // State
+					deliveryPs.setInt(6, Integer.parseInt(addressParts[4].trim())); // Zip
+					deliveryPs.setBoolean(7, delivery.getIsComplete());
+					deliveryPs.executeUpdate();
+				}
+			} else if (o instanceof PickupOrder) {
+				PickupOrder pickup = (PickupOrder) o;
+				sql = "INSERT INTO `pickup` (ordertable_OrderID, pickup_IsPickedUp) VALUES (?, ?)";
+				try (PreparedStatement pickupPs = conn.prepareStatement(sql)) {
+					pickupPs.setInt(1, orderID);
+					pickupPs.setBoolean(2, pickup.getIsPickedUp());
+					pickupPs.executeUpdate();
+				}
+			} else if (o instanceof DineinOrder) {
+				DineinOrder dinein = (DineinOrder) o;
+				sql = "INSERT INTO `dinein` (ordertable_OrderID, dinein_TableNum) VALUES (?, ?)";
+				try (PreparedStatement dineinPs = conn.prepareStatement(sql)) {
+					dineinPs.setInt(1, orderID);
+					dineinPs.setInt(2, dinein.getTableNum());
+					dineinPs.executeUpdate();
+				}
+			}
+
+			// Add pizzas
+			for (Pizza pizza : o.getPizzaList()) {
+				addPizza(new java.util.Date(), orderID, pizza);
+			}
+
+			// Order discounts
+			for (Discount discount : o.getDiscountList()) {
+				sql = "INSERT INTO `order_discount` (ordertable_OrderID, discount_DiscountID) VALUES (?, ?)";
+				try (PreparedStatement discountPs = conn.prepareStatement(sql)) {
+					discountPs.setInt(1, orderID);
+					discountPs.setInt(2, discount.getDiscountID());
+					discountPs.executeUpdate();
+				}
+			}
+
+			conn.commit();
+		} catch (SQLException e) {
+			if (conn != null) {
+				conn.rollback();
+			}
+			throw e;
+		} finally {
+			if (conn != null) {
+				conn.setAutoCommit(true);
+				conn.close();
+			}
+		}
+
+
+
+
+
+		/*
+		 * add code to add the order to the DB. Remember that we're not just
+		 * adding the order to the order DB table, but we're also recording
+		 * the necessary data for the delivery, dinein, pickup, pizzas, toppings
+		 * on pizzas, order discounts and pizza discounts.
+		 * 
+		 * This is a KEY method as it must store all the data in the Order object
+		 * in the database and make sure all the tables are correctly linked.
+		 * 
+		 * Remember, if the order is for Dine In, there is no customer...
+		 * so the customer id coming from the Order object will be -1.
+		 * 
+		 */
+
+	}
+	
+	public static int addPizza(java.util.Date d, int orderID, Pizza p) throws SQLException, IOException
+	{
+
+		try {
+			if (conn == null || conn.isClosed()) {
+				if (!connect_to_db()) {
+					throw new SQLException("Failed to establish a database connection.");
+				}
+			}
+			String sql =
+					"INSERT INTO 'pizza' " +
+							"(ordertable_OrderID, pizza_Size, pizza_CrustType, pizza_PizzaState, pizza_PizzaDate, pizza_CustPrice, pizza_BusPrice) " +
+							"VALUES (?, ?, ?, ?, ?, ?, ?)";
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setInt(1, orderID);
+			ps.setString(2, p.getSize());
+			ps.setString(3, p.getCrustType());
+			ps.setString(4, p.getPizzaState());
+			ps.setDate(5, new java.sql.Date(d.getTime()));
+			ps.setDouble(6, p.getCustPrice());
+			ps.setDouble(7, p.getBusPrice());
+
+			ps.executeUpdate();
+			ResultSet rs = ps.getGeneratedKeys();
+			if (!rs.next()) {
+				throw new SQLException("Failed to retrieve generated Pizza ID.");
+			}
+			int pizzaID = rs.getInt(1);
+
+			// Add topping
+			for (Topping topping : p.getToppings()) {
+				sql = "INSERT INTO 'pizza_topping' " +
+						"(pizza_PizzaID, topping_TopID, pizza_topping_IsDouble) " +
+						"VALUES (?, ?, ?)";
+				ps = conn.prepareStatement(sql);
+				ps.setInt(1, pizzaID);
+				ps.setInt(2, topping.getTopID());
+				ps.setInt(3, topping.getDoubled() ? 1 : 0);
+				ps.executeUpdate();
+			}
+
+			// Add discount
+			for (Discount discount : p.getDiscounts()) {
+				sql = "INSERT INTO 'pizza_discount' " +
+						"(pizza_PizzaID, discount_DiscountID) " +
+						"VALUES (?, ?)";
+				ps = conn.prepareStatement(sql);
+				ps.setInt(1, pizzaID);
+				ps.setInt(2, discount.getDiscountID());
+				ps.executeUpdate();
+			}
+			conn.commit();
+			return pizzaID;
+		} catch (SQLException e) {
+			if (conn != null) {
+				conn.rollback();
+			}
+			throw e;
+		}
+
+		/*
+		 * Add the code needed to insert the pizza into into the database.
+		 * Keep in mind you must also add the pizza discounts and toppings
+		 * associated with the pizza.
+		 * 
+		 * NOTE: there is a Date object passed into this method so that the Order
+		 * and ALL its Pizzas can be assigned the same DTS.
+		 * 
+		 * This method returns the id of the pizza just added.
+		 * 
+		 */
+
+	}
+	
+	public static int addCustomer(Customer c) throws SQLException, IOException
+	 {
+		 try {
+			 connect_to_db();
+		 } catch (Exception e) {
+			 System.out.println("Something went wrong");
+		 }
+
+
+		/*
+		 * This method adds a new customer to the database.
+		 * 
+		 */
+
+		 return -1;
+	}
+
+	public static void completeOrder(int OrderID, order_state newState ) throws SQLException, IOException
+	{
+		/*
+		 * Mark that order as complete in the database.
+		 * Note: if an order is complete, this means all the pizzas are complete as well.
+		 * However, it does not mean that the order has been delivered or picked up!
+		 *
+		 * For newState = PREPARED: mark the order and all associated pizza's as completed
+		 * For newState = DELIVERED: mark the delivery status
+		 * FOR newState = PICKEDUP: mark the pickup status
+		 * 
+		 */
+
+	}
+
+
+	public static ArrayList<Order> getOrders(int status) throws SQLException, IOException
+	 {
+	/*
+	 * Return an ArrayList of orders.
+	 * 	status   == 1 => return a list of open (ie order is not completed)
+	 *           == 2 => return a list of completed orders (ie order is complete)
+	 *           == 3 => return a list of all the orders
+	 * Remember that in Java, we account for supertypes and subtypes
+	 * which means that when we create an arrayList of orders, that really
+	 * means we have an arrayList of dineinOrders, deliveryOrders, and pickupOrders.
+	 *
+	 * You must fully populate the Order object, this includes order discounts,
+	 * and pizzas along with the toppings and discounts associated with them.
+	 * 
+	 * Don't forget to order the data coming from the database appropriately.
+	 *
+	 */
+		return null;
+	}
+	
+	public static Order getLastOrder() throws SQLException, IOException 
+	{
+		/*
+		 * Query the database for the LAST order added
+		 * then return an Order object for that order.
+		 * NOTE...there will ALWAYS be a "last order"!
+		 */
+		 return null;
+	}
+
+	public static ArrayList<Order> getOrdersByDate(String date) throws SQLException, IOException
+	 {
+		/*
+		 * Query the database for ALL the orders placed on a specific date
+		 * and return a list of those orders.
+		 *  
+		 */
+		 return null;
+	}
+		
+	public static ArrayList<Discount> getDiscountList() throws SQLException, IOException 
+	{
+		/* 
+		 * Query the database for all the available discounts and 
+		 * return them in an arrayList of discounts ordered by discount name.
+		 * 
+		*/
+		return null;
+	}
+
+	public static Discount findDiscountByName(String name) throws SQLException, IOException 
+	{
+		/*
+		 * Query the database for a discount using it's name.
+		 * If found, then return an OrderDiscount object for the discount.
+		 * If it's not found....then return null
+		 *  
+		 */
+		 return null;
+	}
+
+
+	public static ArrayList<Customer> getCustomerList() throws SQLException, IOException 
+	{
+		/*
+		 * Query the data for all the customers and return an arrayList of all the customers. 
+		 * Don't forget to order the data coming from the database appropriately.
+		 * 
+		*/
+		return null;
+	}
+
+	public static Customer findCustomerByPhone(String phoneNumber)  throws SQLException, IOException 
+	{
+		/*
+		 * Query the database for a customer using a phone number.
+		 * If found, then return a Customer object for the customer.
+		 * If it's not found....then return null
+		 *  
+		 */
+		 return null;
+	}
+
+	public static String getCustomerName(int CustID) throws SQLException, IOException 
+	{
+		/*
+		 * COMPLETED...WORKING Example!
+		 * 
+		 * This is a helper method to fetch and format the name of a customer
+		 * based on a customer ID. This is an example of how to interact with
+		 * your database from Java.  
+		 * 
+		 * Notice how the connection to the DB made at the start of the 
+		 *
+		 */
+
+		 connect_to_db();
+
+		/* 
+		 * an example query using a constructed string...
+		 * remember, this style of query construction could be subject to sql injection attacks!
+		 * 
+		 */
+		String cname1 = "";
+		String cname2 = "";
+		String query = "Select customer_FName, customer_LName From customer WHERE customer_CustID=" + CustID + ";";
+		Statement stmt = conn.createStatement();
+		ResultSet rset = stmt.executeQuery(query);
+
+		while(rset.next())
+		{
+			cname1 = rset.getString(1) + " " + rset.getString(2);
+		}
+
+		/* 
+		* an BETTER example of the same query using a prepared statement...
+		* with exception handling
+		* 
+		*/
+		try {
+			PreparedStatement os;
+			ResultSet rset2;
+			String query2;
+			query2 = "Select customer_FName, customer_LName From customer WHERE customer_CustID=?;";
+			os = conn.prepareStatement(query2);
+			os.setInt(1, CustID);
+			rset2 = os.executeQuery();
+			while(rset2.next())
+			{
+				cname2 = rset2.getString("customer_FName") + " " + rset2.getString("customer_LName"); // note the use of field names in the getSting methods
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			// process the error or re-raise the exception to a higher level
+		}
+
+		conn.close();
+
+		return cname1;
+		// OR
+		// return cname2;
+
+	}
+
+
+	public static ArrayList<Topping> getToppingList() throws SQLException, IOException 
+	{
+		ArrayList<Topping> toppingList = new ArrayList<>();
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		try {
+			connect_to_db();
+			// SQL query to retrieve all toppings sorted by topping_TopName
+			String sql = "SELECT topping_TopID, topping_TopName, topping_SmallAMT, topping_MedAMT, topping_LgAMT, " +
+					"topping_XLAMT, topping_CustPrice, topping_BusPrice, topping_MinINVT, topping_CurINVT " +
+					"FROM `topping` ORDER BY topping_TopName ASC";
+
+			ps = conn.prepareStatement(sql);
+			rs = ps.executeQuery();
+
+			// Iterate through the result set and build Topping objects
+			while (rs.next()) {
+				int topID = rs.getInt("topping_TopID");
+				String topName = rs.getString("topping_TopName");
+				double smallAMT = rs.getDouble("topping_SmallAMT");
+				double medAMT = rs.getDouble("topping_MedAMT");
+				double lgAMT = rs.getDouble("topping_LgAMT");
+				double xlAMT = rs.getDouble("topping_XLAMT");
+				double custPrice = rs.getDouble("topping_CustPrice");
+				double busPrice = rs.getDouble("topping_BusPrice");
+				int minINVT = rs.getInt("topping_MinINVT");
+				int curINVT = rs.getInt("topping_CurINVT");
+
+				// Create a new Topping object
+				Topping topping = new Topping(topID, topName, smallAMT, medAMT, lgAMT, xlAMT, custPrice, busPrice, minINVT, curINVT);
+				toppingList.add(topping);
+			}
+
+		} catch (SQLException e) {
+			throw e; // Rethrow the exception for handling elsewhere
+		} finally {
+			if (rs != null) rs.close();
+			if (ps != null) ps.close();
+			if (conn != null) conn.close();
+		}
+		return toppingList;
+	}
+
+	public static Topping findToppingByName(String name) throws SQLException, IOException 
+	{
+		/*
+		 * Query the database for the topping using it's name.
+		 * If found, then return a Topping object for the topping.
+		 * If it's not found....then return null
+		 *  
+		 */
+		 return null;
+	}
+
+	public static ArrayList<Topping> getToppingsOnPizza(Pizza p) throws SQLException, IOException 
+	{
+		/* 
+		 * This method builds an ArrayList of the toppings ON a pizza.
+		 * The list can then be added to the Pizza object elsewhere in the
+		 */
+
+		return null;	
+	}
+
+	public static void addToInventory(int toppingID, double quantity) throws SQLException, IOException 
+	{
+		/*
+		 * Updates the quantity of the topping in the database by the amount specified.
+		 * 
+		 * */
+	}
+	
+	
+	public static ArrayList<Pizza> getPizzas(Order o) throws SQLException, IOException 
+	{
+		/*
+		 * Build an ArrayList of all the Pizzas associated with the Order.
+		 * 
+		 */
+		return null;
+	}
+
+	public static ArrayList<Discount> getDiscounts(Order o) throws SQLException, IOException 
+	{
+		/* 
+		 * Build an array list of all the Discounts associted with the Order.
+		 * 
+		 */
+
+		return null;
+	}
+
+	public static ArrayList<Discount> getDiscounts(Pizza p) throws SQLException, IOException 
+	{
+		/* 
+		 * Build an array list of all the Discounts associted with the Pizza.
+		 * 
+		 */
+	
+		return null;
+	}
+
+	public static double getBaseCustPrice(String size, String crust) throws SQLException, IOException 
+	{
+		/* 
+		 * Query the database fro the base customer price for that size and crust pizza.
+		 * 
+		*/
+		return 0.0;
+	}
+
+	public static double getBaseBusPrice(String size, String crust) throws SQLException, IOException 
+	{
+		/* 
+		 * Query the database fro the base business price for that size and crust pizza.
+		 * 
+		*/
+		return 0.0;
+	}
+
+	
+	public static void printToppingPopReport() throws SQLException, IOException
+	{
+		/*
+		 * Prints the ToppingPopularity view. Remember that this view
+		 * needs to exist in your DB, so be sure you've run your createViews.sql
+		 * files on your testing DB if you haven't already.
+		 * 
+		 * The result should be readable and sorted as indicated in the prompt.
+		 * 
+		 * HINT: You need to match the expected output EXACTLY....I would suggest
+		 * you look at the printf method (rather that the simple print of println).
+		 * It operates the same in Java as it does in C and will make your code
+		 * better.
+		 * 
+		 */
+	}
+	
+	public static void printProfitByPizzaReport() throws SQLException, IOException 
+	{
+		/*
+		 * Prints the ProfitByPizza view. Remember that this view
+		 * needs to exist in your DB, so be sure you've run your createViews.sql
+		 * files on your testing DB if you haven't already.
+		 * 
+		 * The result should be readable and sorted as indicated in the prompt.
+		 * 
+		 * HINT: You need to match the expected output EXACTLY....I would suggest
+		 * you look at the printf method (rather that the simple print of println).
+		 * It operates the same in Java as it does in C and will make your code
+		 * better.
+		 * 
+		 */
+	}
+	
+	public static void printProfitByOrderType() throws SQLException, IOException
+	{
+		/*
+		 * Prints the ProfitByOrderType view. Remember that this view
+		 * needs to exist in your DB, so be sure you've run your createViews.sql
+		 * files on your testing DB if you haven't already.
+		 * 
+		 * The result should be readable and sorted as indicated in the prompt.
+		 *
+		 * HINT: You need to match the expected output EXACTLY....I would suggest
+		 * you look at the printf method (rather that the simple print of println).
+		 * It operates the same in Java as it does in C and will make your code
+		 * better.
+		 * 
+		 */
+	}
+	
+	
+	
+	/*
+	 * These private methods help get the individual components of an SQL datetime object. 
+	 * You're welcome to keep them or remove them....but they are usefull!
+	 */
+	private static int getYear(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	{
+		return Integer.parseInt(date.substring(0,4));
+	}
+	private static int getMonth(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	{
+		return Integer.parseInt(date.substring(5, 7));
+	}
+	private static int getDay(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	{
+		return Integer.parseInt(date.substring(8, 10));
+	}
+
+	public static boolean checkDate(int year, int month, int day, String dateOfOrder)
+	{
+		if(getYear(dateOfOrder) > year)
+			return true;
+		else if(getYear(dateOfOrder) < year)
+			return false;
+		else
+		{
+			if(getMonth(dateOfOrder) > month)
+				return true;
+			else if(getMonth(dateOfOrder) < month)
+				return false;
+			else
+			{
+				if(getDay(dateOfOrder) >= day)
+					return true;
+				else
+					return false;
+			}
+		}
+	}
+
+//	private static void handleOrderSubtype(Connection conn, Order o) throws SQLException, IOException
+//	{	String sql;
+//
+//		if (o instanceof DineinOrder) {
+//			DineinOrder dinein = (DineinOrder) o;
+//			sql = "INSERT INTO 'dinein' " +
+//					"(ordertable_OrderID, dinein_TableNum) " +
+//					"VALUES (?, ?)";
+//			try (PreparedStatement ps = conn.prepareStatement(sql)) {
+//				ps.setInt(1, o.getOrderID());
+//				ps.setInt(2, dinein.getTableNum());
+//				ps.executeUpdate();
+//			}
+//		}
+//		else if (o instanceof  DeliveryOrder) {
+//			DeliveryOrder delivery = (DeliveryOrder) o;
+//			sql = "INSERT INTO 'delivery' " +
+//					"(ordertable_OrderID, delivery_HouseNum, delivery_Street, delivery_City, delivery_State, delivery_Zip, delivery_IsDelivered) " +
+//					"VALUES (?, ?, ?, ?, ?, ?, ?)";
+//			try (PreparedStatement ps = conn.prepareStatement(sql)) {
+//				ps.setInt(1, o.getOrderID());
+//				ps.setInt(2, delivery.getHouseNum());
+//				ps.setString(3, delivery.getStreet());
+//				ps.setString(4, delivery.getCity());
+//				ps.setString(5, delivery.getState());
+//				ps.setString(6, delivery.getZip());
+//				ps.setBoolean(7, delivery.getIsDelivered());
+//				ps.executeUpdate();
+//			}
+//		}
+//	}
+
+
+}
