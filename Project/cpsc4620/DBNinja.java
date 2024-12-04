@@ -232,13 +232,28 @@ public final class DBNinja {
 				ps.setInt(3, topping.getDoubled() ? 1 : 0);
 				ps.executeUpdate();
 
+				double unitsNeeded = 0.0;
+
+				if (p.getSize().equals(DBNinja.size_s)) {
+					unitsNeeded = topping.getSmallAMT();
+				} else if (p.getSize().equals(DBNinja.size_m)) {
+					unitsNeeded = topping.getMedAMT();
+				} else if (p.getSize().equals(DBNinja.size_l)) {
+					unitsNeeded = topping.getLgAMT();
+				} else {
+					unitsNeeded = topping.getXLAMT();
+				}
+
+				if (topping.getDoubled()) {
+					unitsNeeded *= 2;
+				}
+
 				// Update inventory
 				sql = "UPDATE topping " +
 						"SET topping_CurINVT = topping_CurINVT - ? " +
 						"WHERE topping_TopID = ?";
 				ps = conn.prepareStatement(sql);
-				int doubleTopping = topping.getDoubled() ? 2 : 1;
-				ps.setInt(1, doubleTopping);
+				ps.setDouble(1, unitsNeeded);
 				ps.setInt(2, topping.getTopID());
 				ps.executeUpdate();
 			}
@@ -1109,7 +1124,7 @@ public final class DBNinja {
 				double CustPrice = rs.getDouble("pizza_CustPrice");
 				double BusPrice = rs.getDouble("pizza_BusPrice");
 
-				Pizza pizza = new Pizza(pizzaID, CrustType, Size, OrderID, PizzaState, PizzaDate, CustPrice, BusPrice);
+				Pizza pizza = new Pizza(pizzaID, Size, CrustType, OrderID, PizzaState, PizzaDate, CustPrice, BusPrice);
 
 				ArrayList<Topping> toppings = getToppingsOnPizza(pizza);
 				for (Topping topping : toppings) {
