@@ -410,10 +410,10 @@ public final class DBNinja {
 							deliveryPs.setInt(1, orderID);
 							try (ResultSet deliveryRs = deliveryPs.executeQuery()) {
 								if (deliveryRs.next()) {
-									String address = deliveryRs.getInt("delivery_HouseNum") + ", " +
-											deliveryRs.getString("delivery_Street") + ", " +
-											deliveryRs.getString("delivery_City") + ", " +
-											deliveryRs.getString("delivery_State") + ", " +
+									String address = deliveryRs.getInt("delivery_HouseNum") + "\t" +
+											deliveryRs.getString("delivery_Street") + "\t" +
+											deliveryRs.getString("delivery_City") + "\t" +
+											deliveryRs.getString("delivery_State") + "\t" +
 											deliveryRs.getInt("delivery_Zip");
 									boolean isDelivered = deliveryRs.getBoolean("delivery_IsDelivered");
 									order = new DeliveryOrder(orderID, custID, orderDateTime, custPrice, busPrice, isComplete, address, isDelivered);
@@ -519,10 +519,10 @@ public final class DBNinja {
 							deliveryPs.setInt(1, orderID);
 							try (ResultSet deliveryRs = deliveryPs.executeQuery()) {
 								if (deliveryRs.next()) {
-									String address = deliveryRs.getInt("delivery_HouseNum") + ", " +
-													 deliveryRs.getString("delivery_Street") + ", " +
-													 deliveryRs.getString("delivery_City") + ", " +
-													 deliveryRs.getString("delivery_State") + ", " +
+									String address = deliveryRs.getInt("delivery_HouseNum") + "\t" +
+													 deliveryRs.getString("delivery_Street") + "\t" +
+													 deliveryRs.getString("delivery_City") + "\t" +
+													 deliveryRs.getString("delivery_State") + "\t" +
 													 deliveryRs.getInt("delivery_Zip");
 									boolean isDelivered = deliveryRs.getBoolean("delivery_IsDelivered");
 									order = new DeliveryOrder(orderID, custID, orderDateTime, custPrice, busPrice, isComplete, address, isDelivered);
@@ -621,10 +621,10 @@ public final class DBNinja {
 							deliveryPs.setInt(1, orderID);
 							try (ResultSet deliveryRs = deliveryPs.executeQuery()) {
 								if (deliveryRs.next()) {
-									String address = deliveryRs.getInt("delivery_HouseNum") + ", " +
-													 deliveryRs.getString("delivery_Street") + ", " +
-													 deliveryRs.getString("delivery_City") + ", " +
-													 deliveryRs.getString("delivery_State") + ", " +
+									String address = deliveryRs.getInt("delivery_HouseNum") + "\t" +
+													 deliveryRs.getString("delivery_Street") + "\t" +
+													 deliveryRs.getString("delivery_City") + "\t" +
+													 deliveryRs.getString("delivery_State") + "\t" +
 													 deliveryRs.getInt("delivery_Zip");
 									boolean isDelivered = deliveryRs.getBoolean("delivery_IsDelivered");
 									order = new DeliveryOrder(orderID, custID, orderDateTime, custPrice, busPrice, isComplete, address, isDelivered);
