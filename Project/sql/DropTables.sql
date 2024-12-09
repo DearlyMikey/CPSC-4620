@@ -14,3 +14,6 @@ DROP TABLE IF EXISTS customer;
 
 DROP VIEW IF EXISTS ToppingPopularity;
 DROP VIEW IF EXISTS ProfitByPizza;
+DROP VIEW IF EXISTS profitbyordertype;
+
+DROP PROCEDURE apply_order_discount_proc;

@@ -117,7 +117,7 @@ INSERT INTO pickup (ordertable_OrderID, pickup_IsPickedUp)
 VALUES (@OrderID, 1);
 
 INSERT INTO pizza (pizza_Size, pizza_CrustType, pizza_PizzaState, pizza_PizzaDate, pizza_CustPrice, pizza_BusPrice, ordertable_OrderID)
-VALUES ('Large', 'Original', 'Completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
+VALUES ('Large', 'Original', 'completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
 SET @PizzaID1 = LAST_INSERT_ID();
 INSERT INTO pizza_topping (pizza_PizzaID, topping_TopID, pizza_topping_IsDouble)
 VALUES
@@ -125,7 +125,7 @@ VALUES
 (@PizzaID1, (SELECT topping_TopID FROM topping WHERE topping_TopName = 'Pepperoni'),0);
 
 INSERT INTO pizza (pizza_Size, pizza_CrustType, pizza_PizzaState, pizza_PizzaDate, pizza_CustPrice, pizza_BusPrice, ordertable_OrderID)
-VALUES ('Large', 'Original', 'Completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
+VALUES ('Large', 'Original', 'completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
 SET @PizzaID2 = LAST_INSERT_ID();
 INSERT INTO pizza_topping (pizza_PizzaID, topping_TopID, pizza_topping_IsDouble)
 VALUES
@@ -133,7 +133,7 @@ VALUES
 (@PizzaID2, (SELECT topping_TopID FROM topping WHERE topping_TopName = 'Pepperoni'),0);
 
 INSERT INTO pizza (pizza_Size, pizza_CrustType, pizza_PizzaState, pizza_PizzaDate, pizza_CustPrice, pizza_BusPrice, ordertable_OrderID)
-VALUES ('Large', 'Original', 'Completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
+VALUES ('Large', 'Original', 'completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
 SET @PizzaID3 = LAST_INSERT_ID();
 INSERT INTO pizza_topping (pizza_PizzaID, topping_TopID, pizza_topping_IsDouble)
 VALUES
@@ -141,7 +141,7 @@ VALUES
 (@PizzaID3, (SELECT topping_TopID FROM topping WHERE topping_TopName = 'Pepperoni'),0);
 
 INSERT INTO pizza (pizza_Size, pizza_CrustType, pizza_PizzaState, pizza_PizzaDate, pizza_CustPrice, pizza_BusPrice, ordertable_OrderID)
-VALUES ('Large', 'Original', 'Completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
+VALUES ('Large', 'Original', 'completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
 SET @PizzaID4 = LAST_INSERT_ID();
 INSERT INTO pizza_topping (pizza_PizzaID, topping_TopID, pizza_topping_IsDouble)
 VALUES
@@ -149,7 +149,7 @@ VALUES
 (@PizzaID4, (SELECT topping_TopID FROM topping WHERE topping_TopName = 'Pepperoni'),0);
 
 INSERT INTO pizza (pizza_Size, pizza_CrustType, pizza_PizzaState, pizza_PizzaDate, pizza_CustPrice, pizza_BusPrice, ordertable_OrderID)
-VALUES ('Large', 'Original', 'Completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
+VALUES ('Large', 'Original', 'completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
 SET @PizzaID5 = LAST_INSERT_ID();
 INSERT INTO pizza_topping (pizza_PizzaID, topping_TopID, pizza_topping_IsDouble)
 VALUES
@@ -157,7 +157,7 @@ VALUES
 (@PizzaID5, (SELECT topping_TopID FROM topping WHERE topping_TopName = 'Pepperoni'),0);
 
 INSERT INTO pizza (pizza_Size, pizza_CrustType, pizza_PizzaState, pizza_PizzaDate, pizza_CustPrice, pizza_BusPrice, ordertable_OrderID)
-VALUES ('Large', 'Original', 'Completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
+VALUES ('Large', 'Original', 'completed', '2024-03-03 21:30:00', 14.88, 3.30, @OrderID);
 SET @PizzaID6 = LAST_INSERT_ID();
 INSERT INTO pizza_topping (pizza_PizzaID, topping_TopID, pizza_topping_IsDouble)
 VALUES
@@ -208,6 +208,7 @@ VALUES
 INSERT INTO order_discount (ordertable_OrderID, discount_DiscountID)
 VALUES
 (@OrderID, (SELECT discount_DiscountID FROM discount WHERE discount_DiscountName = 'Gameday Special'));
+CALL apply_order_discount_proc(@OrderID);
 
 # Order 5
 INSERT INTO customer (customer_FName, customer_LName, customer_PhoneNum)
@@ -296,3 +297,4 @@ VALUES
 INSERT INTO order_discount (ordertable_OrderID, discount_DiscountID)
 VALUES
 (@OrderID, (SELECT discount_DiscountID FROM discount WHERE discount_DiscountName = 'Employee'));
+CALL apply_order_discount_proc(@OrderID);

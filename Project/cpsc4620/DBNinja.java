@@ -2,6 +2,7 @@ package cpsc4620;
 
 import java.io.IOException;
 import java.sql.*;
+import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -71,7 +72,7 @@ public final class DBNinja {
 
 	}
 
-	public static void addOrder(Order o) throws SQLException, IOException 
+	public static void addOrder(Order o) throws SQLException, IOException
 	{
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -113,7 +114,7 @@ public final class DBNinja {
 						"VALUES (?, ?, ?, ?, ?, ?, ?)";
 				try (PreparedStatement deliveryPs = conn.prepareStatement(sql)) {
 					deliveryPs.setInt(1, orderID);
-					String[] addressParts = delivery.getAddress().split(",");
+					String[] addressParts = delivery.getAddress().split("\t");
 					deliveryPs.setInt(2, Integer.parseInt(addressParts[0].trim())); // HouseNum
 					deliveryPs.setString(3, addressParts[1].trim()); // Street
 					deliveryPs.setString(4, addressParts[2].trim()); // City
@@ -143,7 +144,7 @@ public final class DBNinja {
 			// Pizzas
 			for (Pizza pizza : o.getPizzaList()) {
 				String dateString = o.getDate();
-				SimpleDateFormat sdf = new SimpleDateFormat("YYYY-MM-DD HH:mm:ss");
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 				java.util.Date utilDate = sdf.parse(dateString);
 				addPizza(utilDate, orderID, pizza);
 			}
@@ -179,13 +180,13 @@ public final class DBNinja {
 		 * adding the order to the order DB table, but we're also recording
 		 * the necessary data for the delivery, dinein, pickup, pizzas, toppings
 		 * on pizzas, order discounts and pizza discounts.
-		 * 
+		 *
 		 * This is a KEY method as it must store all the data in the Order object
 		 * in the database and make sure all the tables are correctly linked.
-		 * 
+		 *
 		 * Remember, if the order is for Dine In, there is no customer...
 		 * so the customer id coming from the Order object will be -1.
-		 * 
+		 *
 		 */
 
 	}
@@ -210,7 +211,7 @@ public final class DBNinja {
 			ps.setString(2, p.getSize());
 			ps.setString(3, p.getCrustType());
 			ps.setString(4, p.getPizzaState());
-			ps.setDate(5, new java.sql.Date(d.getTime()));
+			ps.setTimestamp(5, new Timestamp(d.getTime()));
 			ps.setDouble(6, p.getCustPrice());
 			ps.setDouble(7, p.getBusPrice());
 
@@ -247,13 +248,15 @@ public final class DBNinja {
 				if (topping.getDoubled()) {
 					unitsNeeded *= 2;
 				}
+				double roundedUnitsNeeded = Math.ceil(unitsNeeded);
+
 
 				// Update inventory
 				sql = "UPDATE topping " +
 						"SET topping_CurINVT = topping_CurINVT - ? " +
 						"WHERE topping_TopID = ?";
 				ps = conn.prepareStatement(sql);
-				ps.setDouble(1, unitsNeeded);
+				ps.setDouble(1, roundedUnitsNeeded);
 				ps.setInt(2, topping.getTopID());
 				ps.executeUpdate();
 			}
@@ -267,6 +270,12 @@ public final class DBNinja {
 				ps.setInt(1, pizzaID);
 				ps.setInt(2, discount.getDiscountID());
 				ps.executeUpdate();
+
+//				if (discount.isPercent()) {
+//					p.setCustPrice(p.getCustPrice() * (1 - discount.getAmount() / 100.0));
+//				} else {
+//					p.setCustPrice(p.getCustPrice() - discount.getAmount());
+//				}
 			}
 			return pizzaID;
 		} catch (SQLException e) {
@@ -419,7 +428,8 @@ public final class DBNinja {
 
 				switch (orderType) {
 					case DBNinja.delivery: {
-						String deliverySql = "SELECT delivery_HouseNum, delivery_Street, delivery_City, delivery_State, delivery_Zip, delivery_IsDelivered " +
+						String deliverySql = "SELECT delivery_HouseNum, delivery_Street, delivery_City, " +
+								"delivery_State, delivery_Zip, delivery_IsDelivered " +
 								"FROM delivery WHERE ordertable_OrderID = ?";
 						try (PreparedStatement deliveryPs = conn.prepareStatement(deliverySql)) {
 							deliveryPs.setInt(1, orderID);
@@ -962,6 +972,12 @@ public final class DBNinja {
 			if (ps != null) ps.close();
 			if (conn != null) conn.close();
 		}
+		/*
+		 * Query the database for the aviable toppings and
+		 * return an arrayList of all the available toppings.
+		 * Don't forget to order the data coming from the database appropriately.
+		 *
+		 */
 	}
 
 	public static Topping findToppingByName(String name) throws SQLException, IOException 
@@ -1046,12 +1062,12 @@ public final class DBNinja {
 				int curINVT = rs.getInt("topping_CurINVT");
 				boolean isDouble = rs.getInt("pizza_topping_IsDouble") == 1;
 
+
 				Topping topping = new Topping(topID, topName, smallAMT, medAMT, lgAMT, xlAMT, custPrice, busPrice,
 						minINVT, curINVT);
 				topping.setDoubled(isDouble);
 
 				toppings.add(topping);
-
 			}
 			return toppings;
 		} catch (SQLException e) {
@@ -1116,8 +1132,8 @@ public final class DBNinja {
 
 			while (rs.next()) {
 				int pizzaID = rs.getInt("pizza_PizzaID");
-				String CrustType = rs.getString("pizza_CrustType");
 				String Size = rs.getString("pizza_Size");
+				String CrustType = rs.getString("pizza_CrustType");
 				int OrderID = o.getOrderID();
 				String PizzaState = rs.getString("pizza_PizzaState");
 				String PizzaDate = rs.getString("pizza_PizzaDate");
@@ -1127,14 +1143,10 @@ public final class DBNinja {
 				Pizza pizza = new Pizza(pizzaID, Size, CrustType, OrderID, PizzaState, PizzaDate, CustPrice, BusPrice);
 
 				ArrayList<Topping> toppings = getToppingsOnPizza(pizza);
-				for (Topping topping : toppings) {
-					pizza.addToppings(topping, topping.getDoubled());
-				}
+				pizza.setToppings(toppings);
 
 				ArrayList<Discount> discounts = getDiscounts(pizza);
-				for (Discount discount : discounts) {
-					pizza.addDiscounts(discount);
-				}
+				pizza.setDiscounts(discounts);
 
 				pizzas.add(pizza);
 			}
@@ -1312,6 +1324,34 @@ public final class DBNinja {
 	
 	public static void printToppingPopReport() throws SQLException, IOException
 	{
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		try {
+			if (conn == null || conn.isClosed()) {
+				connect_to_db();
+			}
+
+			String sql = "SELECT Topping, ToppingCount FROM ToppingPopularity";
+			ps = conn.prepareStatement(sql);
+			rs = ps.executeQuery();
+
+			System.out.printf("%-20s %-20s%n", "Topping", "ToppingCount");
+			System.out.printf("%-20s %-20s%n", "-------", "-------------");
+
+			while (rs.next()) {
+				String topping = rs.getString("Topping");
+				int toppingCount = rs.getInt("ToppingCount");
+
+				System.out.printf("%-20s %-20s%n", topping, toppingCount);
+			}
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			if (rs != null) rs.close();
+			if (ps != null) ps.close();
+			if (conn != null) conn.close();
+		}
 		/*
 		 * Prints the ToppingPopularity view. Remember that this view
 		 * needs to exist in your DB, so be sure you've run your createViews.sql
@@ -1329,6 +1369,38 @@ public final class DBNinja {
 	
 	public static void printProfitByPizzaReport() throws SQLException, IOException 
 	{
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		try {
+			if (conn == null || conn.isClosed()) {
+				connect_to_db();
+			}
+
+			String sql = "SELECT Size, Crust, Profit, OrderMonth FROM ProfitByPizza";
+			ps = conn.prepareStatement(sql);
+			rs = ps.executeQuery();
+
+			System.out.printf("%-20s %-19s %-19s %-19s%n",
+					"Pizza Size", "Pizza Crust", "Profit", "Last Order Date");
+			System.out.printf("%-20s %-19s %-19s %-19s%n",
+					"----------", "-----------", "------", "---------------");
+
+			while (rs.next()) {
+				String size = rs.getString("Size");
+				String crust = rs.getString("Crust");
+				double profit = rs.getDouble("Profit");
+				String orderMonth = rs.getString("OrderMonth");
+
+				System.out.printf("%-20s %-19s %-19.2f %-19s%n", size, crust, profit, orderMonth);
+			}
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			if (rs != null) rs.close();
+			if (ps != null) ps.close();
+			if (conn != null) conn.close();
+		}
 		/*
 		 * Prints the ProfitByPizza view. Remember that this view
 		 * needs to exist in your DB, so be sure you've run your createViews.sql
@@ -1346,6 +1418,57 @@ public final class DBNinja {
 	
 	public static void printProfitByOrderType() throws SQLException, IOException
 	{
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		try {
+			if (conn == null || conn.isClosed()) {
+				connect_to_db();
+			}
+
+			String sql = "SELECT customerType, OrderMonth, TotalOrderPrice, TotalOrderCost, Profit " +
+					"FROM ProfitByOrderType " +
+					"ORDER BY " +
+					"CASE " +
+					"    WHEN customerType = '' THEN 1 " +
+					"    ELSE 0 " +
+					"END, " +
+					"CASE " +
+					"    WHEN OrderMonth = '12/2024' THEN 1 " +
+					"    ELSE 0 " +
+					"END, " +
+					"STR_TO_DATE(OrderMonth, '%m/%Y') ASC, " +
+					"FIELD(customerType, 'dinein', 'pickup', 'delivery') ASC, " +
+					"Profit DESC";
+			ps = conn.prepareStatement(sql);
+			rs = ps.executeQuery();
+
+			System.out.printf("%-19s %-19s %-19s %-19s %-19s%n",
+					"Customer Type", "Order Month", "Total Order Price", "Total Order Cost", "Profit");
+			System.out.printf("%-19s %-19s %-19s %-19s %-19s%n",
+					"-------------", "-----------", "-----------------", "----------------", "------");
+
+			while (rs.next()) {
+				String customerType = rs.getString("customerType");
+				String orderMonth = rs.getString("OrderMonth");
+				double totalOrderPrice = rs.getDouble("TotalOrderPrice");
+				double totalOrderCost = rs.getDouble("TotalOrderCost");
+				double profit = rs.getDouble("Profit");
+
+				if (customerType == null || customerType.isEmpty()) {
+					customerType = "";
+				}
+				// Michael Gonzales
+				System.out.printf("%-19s %-19s %-19.2f %-19.2f %-19.2f%n",
+						customerType.isEmpty() ? "" : customerType, orderMonth, totalOrderPrice, totalOrderCost, profit);
+			}
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			if (rs != null) rs.close();
+			if (ps != null) ps.close();
+			if (conn != null) conn.close();
+		}
 		/*
 		 * Prints the ProfitByOrderType view. Remember that this view
 		 * needs to exist in your DB, so be sure you've run your createViews.sql

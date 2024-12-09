@@ -157,12 +157,13 @@ public class Pizza
 		} else if (Size.equals(DBNinja.size_m)) {
 			unitsNeeded = t.getMedAMT();
 		} else if (Size.equals(DBNinja.size_l)) {
-			unitsNeeded = t.getXLAMT();
+			unitsNeeded = t.getLgAMT();
 		} else {
 			unitsNeeded = t.getXLAMT();
 		}
 
-
+//		System.out.println("Before pizza BusPrice: " + this.BusPrice);
+//		System.out.println("Before pizza CustPrice: " + this.CustPrice);
 		//also add to the prices of the pizza
 		if(isExtra)
 		{
@@ -174,7 +175,10 @@ public class Pizza
 			this.BusPrice += unitsNeeded*t.getBusPrice();
 			this.CustPrice += unitsNeeded*t.getCustPrice();
 		}
-
+//		System.out.println("Topping CustPrice: " + t.getCustPrice());
+//		System.out.println("Topping BusPrice: " + t.getBusPrice());
+//		System.out.println("After pizza BusPrice: " + this.BusPrice);
+//		System.out.println("After pizza CustPrice: " + this.CustPrice);
 	}
 	
 	public void addDiscounts(Discount d)
